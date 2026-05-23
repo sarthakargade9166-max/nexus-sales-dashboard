@@ -525,10 +525,12 @@ function showTab(name){
 
 // ── Filters ─────────────────────────────────────────────────────────
 function applyFilters(){
-  tabLoaded = {};                           // force full redraw
+  tabLoaded = {};
+  fcLoaded = false;                         // always re-run forecast with new filters
   $('filterBadge').style.display = isFiltered() ? 'block' : 'none';
-  if(currentTab === 'overview')  loadOverview(true);
+  if(currentTab === 'overview')       loadOverview(true);
   else if(currentTab === 'analytics') loadAnalytics(true);
+  else if(currentTab === 'forecast')  loadForecast(true);
   else if(currentTab === 'data')      loadTable();
 }
 
@@ -540,8 +542,10 @@ function clearFilters(){
   $('filterProduct').value  = 'all';
   $('filterBadge').style.display = 'none';
   tabLoaded = {};
-  if(currentTab === 'overview')  loadOverview(true);
+  fcLoaded = false;
+  if(currentTab === 'overview')       loadOverview(true);
   else if(currentTab === 'analytics') loadAnalytics(true);
+  else if(currentTab === 'forecast')  loadForecast(true);
   else if(currentTab === 'data')      loadTable();
 }
 
@@ -797,12 +801,12 @@ function drawQty(data){
 function loadForecast(force, done){
   if(!force && fcLoaded){ if(done) done(); return; }
   fcLoaded = true;
-  $('fcWrap').innerHTML = '<div class="cload"><div class="spinner"></div><span>Training Random Forest model…</span></div>';
+  $('fcWrap').innerHTML = '<div class="cload"><div class="spinner"></div><span>Running Linear Regression model…</span></div>';
   ['fcInsights','fcTrends','fcAnomalies'].forEach(id => {
     $(id).innerHTML = '<div class="cload" style="height:70px"><div class="spinner"></div></div>';
   });
 
-  fetch('/api/forecast')
+  fetch('/api/forecast?' + getFilters())
     .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
     .then(d => {
       if(d.error){ $('fcWrap').innerHTML='<div class="cload" style="color:var(--danger)"><i class="fas fa-exclamation-triangle" style="font-size:20px;margin-bottom:8px"></i><div>'+d.error+'</div></div>'; return; }

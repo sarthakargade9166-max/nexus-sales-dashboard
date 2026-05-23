@@ -201,55 +201,89 @@ def build_chartdata(df):
 
 # ─── Forecast ─────────────────────────────────────────────────────────────────
 def build_forecast(df):
+    from sklearn.linear_model import LinearRegression
     mon = df.groupby(df['Date'].dt.to_period('M'))['Sales'].sum().reset_index()
     mon.columns = ['Month','Sales']
     mon['n'] = range(len(mon))
     if len(mon) < 3:
-        return None, None, []
+        return None, None, [], {}, {}
 
-    X,y = mon[['n']].values, mon['Sales'].values
-    model = RandomForestRegressor(n_estimators=100, random_state=42)
-    model.fit(X,y)
+    X, y = mon[['n']].values, mon['Sales'].values.astype(float)
 
-    fp    = model.predict([[len(mon)+i] for i in range(6)])
-    ci    = fp * 0.10
-    last  = mon['Month'].iloc[-1].to_timestamp()
-    fdates= [(last+pd.DateOffset(months=i+1)).strftime('%Y-%m') for i in range(6)]
+    # Use Linear Regression — captures the real trend line properly
+    # Also compute a growth rate from the last 3 months for blending
+    lr = LinearRegression()
+    lr.fit(X, y)
+
+    # Predict next 6 months with linear trend
+    future_n  = np.array([[len(mon)+i] for i in range(6)])
+    fp_linear = lr.predict(future_n)
+
+    # Blend with last known value momentum (weighted avg last 3 months)
+    last3_avg  = float(np.mean(y[-3:])) if len(y) >= 3 else float(y[-1])
+    last_slope = float(lr.coef_[0])
+
+    # Build smooth forecast: start from last real value, apply trend
+    last_val = float(y[-1])
+    fp = np.array([last_val + last_slope * (i+1) for i in range(6)])
+
+    # Keep predictions positive
+    fp = np.maximum(fp, last_val * 0.5)
+
+    # Confidence interval: widen as we go further out
+    ci = np.array([fp[i] * (0.08 + i*0.015) for i in range(6)])
+
+    last   = mon['Month'].iloc[-1].to_timestamp()
+    fdates = [(last+pd.DateOffset(months=i+1)).strftime('%Y-%m') for i in range(6)]
+
+    mae = round(float(mean_absolute_error(y, lr.predict(X))), 2)
+    trend_pct = round(abs((fp[-1]-fp[0])/fp[0]*100), 1) if fp[0] else 0
 
     insights = {
-        'trend':   'upward' if fp[-1]>fp[0] else 'downward',
-        'next':    round(float(fp[0]),2),
-        'sixth':   round(float(fp[-1]),2),
-        'change':  round(abs((fp[-1]-fp[0])/fp[0]*100),1) if fp[0] else 0,
-        'mae':     round(float(mean_absolute_error(y, model.predict(X))),2),
+        'trend':  'upward' if fp[-1] > fp[0] else 'downward',
+        'next':   round(float(fp[0]), 2),
+        'sixth':  round(float(fp[-1]), 2),
+        'change': trend_pct,
+        'mae':    mae,
     }
 
-    # anomaly detection
-    iso  = IsolationForest(contamination=0.1, random_state=42)
-    mon['flag'] = iso.fit_predict(mon[['Sales']])
-    anom = mon[mon['flag']==-1][['Month','Sales']].copy()
-    anom_list = [{'month':str(r['Month']),'sales':round(float(r['Sales']),2)} for _,r in anom.iterrows()]
+    # Anomaly detection using Z-score (works with small datasets)
+    mean_s = float(np.mean(y))
+    std_s  = float(np.std(y))
+    anom_list = []
+    if std_s > 0:
+        for _, row in mon.iterrows():
+            z = abs((float(row['Sales']) - mean_s) / std_s)
+            if z > 1.8:  # more than 1.8 standard deviations away
+                anom_list.append({
+                    'month': str(row['Month']),
+                    'sales': round(float(row['Sales']), 2)
+                })
 
-    # product trends
-    df2 = df.copy(); df2['Month'] = df['Date'].dt.to_period('M')
-    mx  = df2['Month'].max()
-    rec = df2[df2['Month'] >= mx-2]; old = df2[df2['Month'] < mx-2]
-    top,dec = {},{}
-    if len(old)>0 and len(rec)>0 and 'Product' in df.columns:
-        rp,op = rec.groupby('Product')['Sales'].sum(), old.groupby('Product')['Sales'].sum()
-        common = rp.index.intersection(op.index)
-        if len(common):
-            chg = ((rp[common]-op[common])/op[common]*100)
-            top = {k:round(float(v),1) for k,v in chg.nlargest(3).items()}
-            dec = {k:round(float(v),1) for k,v in chg.nsmallest(3).items()}
+    # Product trends — compare last 2 months vs previous months
+    top, dec = {}, {}
+    if 'Product' in df.columns:
+        df2 = df.copy()
+        df2['Month'] = df['Date'].dt.to_period('M')
+        mx  = df2['Month'].max()
+        rec = df2[df2['Month'] >= mx - 1]
+        old = df2[df2['Month'] <  mx - 1]
+        if len(old) > 0 and len(rec) > 0:
+            rp = rec.groupby('Product')['Sales'].sum()
+            op = old.groupby('Product')['Sales'].sum()
+            common = rp.index.intersection(op.index)
+            if len(common):
+                chg = ((rp[common] - op[common]) / op[common] * 100)
+                top = {k: round(float(v),1) for k,v in chg.nlargest(3).items()}
+                dec = {k: round(float(v),1) for k,v in chg.nsmallest(3).items()}
 
     return {
         'hist_labels':   mon['Month'].astype(str).tolist(),
         'hist_values':   safe_float_list(y),
         'future_labels': fdates,
-        'future_values': safe_float_list(fp),
-        'upper':         safe_float_list(fp+ci),
-        'lower':         safe_float_list(fp-ci),
+        'future_values': [round(float(v),2) for v in fp],
+        'upper':         [round(float(v),2) for v in fp+ci],
+        'lower':         [round(float(v),2) for v in fp-ci],
     }, insights, anom_list, top, dec
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
@@ -312,11 +346,12 @@ def api_chartdata():
     df = apply_filters(load_data(current_user.id), f)
     return jsonify(build_chartdata(df))
 
-# ─── API: forecast ─────────────────────────────────────────────────────────────
+# ─── API: forecast (supports filters) ─────────────────────────────────────────
 @app.route('/api/forecast')
 @login_required
 def api_forecast():
-    df = load_data(current_user.id)
+    f  = {k: request.args.get(k,'') for k in ['date_from','date_to','category','region','product']}
+    df = apply_filters(load_data(current_user.id), f)
     fc, ins, anom, top, dec = build_forecast(df)
     if fc is None:
         return jsonify({'error':'Need at least 3 months of data.'}), 400
