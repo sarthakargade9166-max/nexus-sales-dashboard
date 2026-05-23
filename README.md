@@ -156,15 +156,7 @@ For PostgreSQL, change `SQLALCHEMY_DATABASE_URI` to use `DATABASE_URL` from env.
 
 ---
 
-## Interview Talking Points
 
-- **Why Flask?** Lightweight, explicit, easy to extend. Django would add unnecessary overhead for a single-user analytics app. Flask-Login + Flask-SQLAlchemy provide auth + ORM without forcing conventions.
-- **ML approach:** Seasonal Linear Regression is interpretable and stable on small datasets. The sin/cos encoding captures 12-month seasonality without requiring statsmodels or Prophet. Random Forest is available for non-linear patterns when data is sufficient (≥12 months).
-- **Security:** Passwords hashed with `werkzeug.security.generate_password_hash` (PBKDF2-SHA256). Session-based auth with Flask-Login. Files namespaced by user ID to prevent enumeration.
-- **Data preprocessing:** Column names normalized to Title_Case, date columns auto-detected and parsed, numeric columns found via keyword matching (handles "Revenue", "Sales", "Amount" etc.).
-- **Architecture:** Single `app.py` keeps it portable. API routes (`/api/*`) return JSON consumed by Plotly in the frontend. Charts rendered client-side — no server-side PNG generation.
-
----
 
 ## Future Improvements
 
@@ -178,8 +170,4 @@ For PostgreSQL, change `SQLALCHEMY_DATABASE_URI` to use `DATABASE_URL` from env.
 - [ ] Inventory management module
 - [ ] REST API with JWT authentication
 
----
 
-## Resume Description
-
-> Developed a full-stack AI-powered Sales & Data Analytics Dashboard using Python, Flask, pandas, Plotly, and scikit-learn. Features include user authentication, CSV/Excel data upload, 7 interactive Plotly charts, real-time KPI cards with filter support, ML-based sales forecasting (Linear Regression + Random Forest with seasonal encoding), Isolation Forest anomaly detection, and SQLite persistence. Dark-themed responsive UI with sidebar navigation.
