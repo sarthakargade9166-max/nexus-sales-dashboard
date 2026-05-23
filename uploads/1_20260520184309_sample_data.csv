@@ -1,0 +1,120 @@
+Date,Product,Category,Region,Sales,Profit,Quantity,Customer_Name
+2023-01-05,Widget Pro,Electronics,North,1250.00,375.00,5,Acme Corp
+2023-01-08,Gadget Plus,Electronics,South,890.50,267.15,3,TechStart Ltd
+2023-01-12,Office Chair,Furniture,East,450.00,135.00,2,GlobalTrade Inc
+2023-01-15,Laptop Stand,Electronics,West,320.00,96.00,4,Nexus Ventures
+2023-01-18,Desk Lamp,Furniture,North,185.00,55.50,6,Apex Solutions
+2023-01-22,Keyboard Pro,Electronics,South,560.00,168.00,5,Skyline Corp
+2023-01-25,Mouse Wireless,Electronics,East,210.00,63.00,7,BluePeak Ltd
+2023-01-28,Monitor 27in,Electronics,West,780.00,234.00,2,CoreTech Inc
+2023-02-02,Widget Pro,Electronics,North,1340.00,402.00,6,Acme Corp
+2023-02-05,Office Desk,Furniture,South,920.00,276.00,2,TechStart Ltd
+2023-02-08,Headphones,Electronics,East,445.00,133.50,4,GlobalTrade Inc
+2023-02-12,Webcam HD,Electronics,West,290.00,87.00,5,Nexus Ventures
+2023-02-15,Filing Cabinet,Furniture,North,380.00,114.00,3,Apex Solutions
+2023-02-19,Widget Pro,Electronics,South,1100.00,330.00,5,Skyline Corp
+2023-02-22,USB Hub,Electronics,East,175.00,52.50,8,BluePeak Ltd
+2023-02-26,Bookshelf,Furniture,West,540.00,162.00,2,CoreTech Inc
+2023-03-01,Laptop Stand,Electronics,North,640.00,192.00,8,Acme Corp
+2023-03-05,Gadget Plus,Electronics,South,1020.00,306.00,4,TechStart Ltd
+2023-03-08,Office Chair,Furniture,East,900.00,270.00,4,GlobalTrade Inc
+2023-03-12,Keyboard Pro,Electronics,West,840.00,252.00,7,Nexus Ventures
+2023-03-15,Widget Pro,Electronics,North,1480.00,444.00,7,Apex Solutions
+2023-03-19,Desk Lamp,Furniture,South,370.00,111.00,12,Skyline Corp
+2023-03-22,Monitor 27in,Electronics,East,1560.00,468.00,4,BluePeak Ltd
+2023-03-26,Mouse Wireless,Electronics,West,420.00,126.00,14,CoreTech Inc
+2023-04-02,Widget Pro,Electronics,North,1620.00,486.00,8,Acme Corp
+2023-04-05,Office Desk,Furniture,South,1380.00,414.00,3,TechStart Ltd
+2023-04-08,Headphones,Electronics,East,890.00,267.00,8,GlobalTrade Inc
+2023-04-12,Webcam HD,Electronics,West,580.00,174.00,10,Nexus Ventures
+2023-04-15,USB Hub,Electronics,North,350.00,105.00,16,Apex Solutions
+2023-04-18,Filing Cabinet,Furniture,South,760.00,228.00,6,Skyline Corp
+2023-04-22,Gadget Plus,Electronics,East,1150.00,345.00,5,BluePeak Ltd
+2023-04-26,Widget Pro,Electronics,West,1390.00,417.00,6,CoreTech Inc
+2023-05-01,Laptop Stand,Electronics,North,720.00,216.00,9,Acme Corp
+2023-05-05,Office Chair,Furniture,South,1350.00,405.00,6,TechStart Ltd
+2023-05-08,Keyboard Pro,Electronics,East,1120.00,336.00,9,GlobalTrade Inc
+2023-05-12,Widget Pro,Electronics,West,1750.00,525.00,9,Nexus Ventures
+2023-05-15,Monitor 27in,Electronics,North,2340.00,702.00,6,Apex Solutions
+2023-05-19,Desk Lamp,Furniture,South,555.00,166.50,18,Skyline Corp
+2023-05-22,Mouse Wireless,Electronics,East,630.00,189.00,21,BluePeak Ltd
+2023-05-26,Headphones,Electronics,West,1335.00,400.50,12,CoreTech Inc
+2023-06-01,Widget Pro,Electronics,North,1820.00,546.00,9,Acme Corp
+2023-06-05,Bookshelf,Furniture,South,810.00,243.00,3,TechStart Ltd
+2023-06-08,Gadget Plus,Electronics,East,1380.00,414.00,6,GlobalTrade Inc
+2023-06-12,Office Desk,Furniture,West,1840.00,552.00,4,Nexus Ventures
+2023-06-15,Webcam HD,Electronics,North,870.00,261.00,15,Apex Solutions
+2023-06-19,Widget Pro,Electronics,South,1660.00,498.00,8,Skyline Corp
+2023-06-22,USB Hub,Electronics,East,525.00,157.50,24,BluePeak Ltd
+2023-06-26,Keyboard Pro,Electronics,West,1400.00,420.00,11,CoreTech Inc
+2023-07-02,Widget Pro,Electronics,North,2100.00,630.00,11,Acme Corp
+2023-07-05,Office Chair,Furniture,South,1800.00,540.00,8,TechStart Ltd
+2023-07-08,Laptop Stand,Electronics,East,1080.00,324.00,13,GlobalTrade Inc
+2023-07-12,Monitor 27in,Electronics,West,3120.00,936.00,8,Nexus Ventures
+2023-07-15,Headphones,Electronics,North,1780.00,534.00,16,Apex Solutions
+2023-07-19,Desk Lamp,Furniture,South,740.00,222.00,24,Skyline Corp
+2023-07-22,Widget Pro,Electronics,East,1950.00,585.00,10,BluePeak Ltd
+2023-07-26,Mouse Wireless,Electronics,West,840.00,252.00,28,CoreTech Inc
+2023-08-01,Gadget Plus,Electronics,North,1840.00,552.00,8,Acme Corp
+2023-08-05,Filing Cabinet,Furniture,South,1140.00,342.00,9,TechStart Ltd
+2023-08-08,Widget Pro,Electronics,East,2250.00,675.00,12,GlobalTrade Inc
+2023-08-12,Keyboard Pro,Electronics,West,1680.00,504.00,14,Nexus Ventures
+2023-08-15,USB Hub,Electronics,North,700.00,210.00,32,Apex Solutions
+2023-08-19,Bookshelf,Furniture,South,1080.00,324.00,4,Skyline Corp
+2023-08-22,Widget Pro,Electronics,East,2050.00,615.00,11,BluePeak Ltd
+2023-08-26,Office Desk,Furniture,West,2300.00,690.00,5,CoreTech Inc
+2023-09-01,Webcam HD,Electronics,North,1160.00,348.00,20,Acme Corp
+2023-09-05,Widget Pro,Electronics,South,2400.00,720.00,13,TechStart Ltd
+2023-09-08,Monitor 27in,Electronics,East,3900.00,1170.00,10,GlobalTrade Inc
+2023-09-12,Office Chair,Furniture,West,2250.00,675.00,10,Nexus Ventures
+2023-09-15,Laptop Stand,Electronics,North,1440.00,432.00,18,Apex Solutions
+2023-09-19,Headphones,Electronics,South,2225.00,667.50,20,Skyline Corp
+2023-09-22,Widget Pro,Electronics,East,2200.00,660.00,12,BluePeak Ltd
+2023-09-26,Mouse Wireless,Electronics,West,1050.00,315.00,35,CoreTech Inc
+2023-10-02,Widget Pro,Electronics,North,2650.00,795.00,14,Acme Corp
+2023-10-05,Keyboard Pro,Electronics,South,2240.00,672.00,18,TechStart Ltd
+2023-10-08,Gadget Plus,Electronics,East,2300.00,690.00,10,GlobalTrade Inc
+2023-10-12,Office Desk,Furniture,West,2760.00,828.00,6,Nexus Ventures
+2023-10-15,USB Hub,Electronics,North,875.00,262.50,40,Apex Solutions
+2023-10-19,Desk Lamp,Furniture,South,925.00,277.50,30,Skyline Corp
+2023-10-22,Widget Pro,Electronics,East,2450.00,735.00,13,BluePeak Ltd
+2023-10-26,Bookshelf,Furniture,West,1350.00,405.00,5,CoreTech Inc
+2023-11-01,Monitor 27in,Electronics,North,4680.00,1404.00,12,Acme Corp
+2023-11-05,Widget Pro,Electronics,South,3100.00,930.00,16,TechStart Ltd
+2023-11-08,Office Chair,Furniture,East,2700.00,810.00,12,GlobalTrade Inc
+2023-11-12,Webcam HD,Electronics,West,1740.00,522.00,30,Nexus Ventures
+2023-11-15,Laptop Stand,Electronics,North,1800.00,540.00,22,Apex Solutions
+2023-11-19,Headphones,Electronics,South,2670.00,801.00,24,Skyline Corp
+2023-11-22,Widget Pro,Electronics,East,2850.00,855.00,15,BluePeak Ltd
+2023-11-26,Filing Cabinet,Furniture,West,1520.00,456.00,12,CoreTech Inc
+2023-12-01,Widget Pro,Electronics,North,3450.00,1035.00,18,Acme Corp
+2023-12-05,Keyboard Pro,Electronics,South,2800.00,840.00,22,TechStart Ltd
+2023-12-08,Office Desk,Furniture,East,3220.00,966.00,7,GlobalTrade Inc
+2023-12-12,Gadget Plus,Electronics,West,3150.00,945.00,14,Nexus Ventures
+2023-12-15,Mouse Wireless,Electronics,North,1470.00,441.00,49,Apex Solutions
+2023-12-19,Widget Pro,Electronics,South,3800.00,1140.00,20,Skyline Corp
+2023-12-22,Monitor 27in,Electronics,East,5460.00,1638.00,14,BluePeak Ltd
+2023-12-26,Bookshelf,Furniture,West,1620.00,486.00,6,CoreTech Inc
+2024-01-04,Widget Pro,Electronics,North,3200.00,960.00,17,Acme Corp
+2024-01-08,Office Chair,Furniture,South,2430.00,729.00,11,TechStart Ltd
+2024-01-12,Laptop Stand,Electronics,East,1600.00,480.00,20,GlobalTrade Inc
+2024-01-15,Headphones,Electronics,West,2670.00,801.00,24,Nexus Ventures
+2024-01-19,USB Hub,Electronics,North,1050.00,315.00,48,Apex Solutions
+2024-01-22,Keyboard Pro,Electronics,South,2520.00,756.00,21,Skyline Corp
+2024-01-26,Widget Pro,Electronics,East,3050.00,915.00,16,BluePeak Ltd
+2024-02-01,Webcam HD,Electronics,West,1740.00,522.00,30,CoreTech Inc
+2024-02-05,Widget Pro,Electronics,North,3400.00,1020.00,18,Acme Corp
+2024-02-08,Monitor 27in,Electronics,South,5070.00,1521.00,13,TechStart Ltd
+2024-02-12,Office Desk,Furniture,East,3450.00,1035.00,7,GlobalTrade Inc
+2024-02-15,Gadget Plus,Electronics,West,3360.00,1008.00,15,Nexus Ventures
+2024-02-19,Mouse Wireless,Electronics,North,1680.00,504.00,56,Apex Solutions
+2024-02-22,Widget Pro,Electronics,South,3750.00,1125.00,20,Skyline Corp
+2024-02-26,Desk Lamp,Furniture,East,1110.00,333.00,36,BluePeak Ltd
+2024-03-01,Widget Pro,Electronics,West,3950.00,1185.00,21,CoreTech Inc
+2024-03-05,Keyboard Pro,Electronics,North,2800.00,840.00,23,Acme Corp
+2024-03-08,Office Chair,Furniture,South,2700.00,810.00,12,TechStart Ltd
+2024-03-12,Headphones,Electronics,East,3115.00,934.50,28,GlobalTrade Inc
+2024-03-15,Laptop Stand,Electronics,West,1760.00,528.00,22,Nexus Ventures
+2024-03-19,Widget Pro,Electronics,North,4100.00,1230.00,22,Apex Solutions
+2024-03-22,Bookshelf,Furniture,South,1890.00,567.00,7,Skyline Corp
+2024-03-26,USB Hub,Electronics,East,1225.00,367.50,56,BluePeak Ltd

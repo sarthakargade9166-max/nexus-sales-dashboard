@@ -1,0 +1,1006 @@
+{% extends 'base.html' %}
+{% block title %}NEXUS Dashboard — Sarthak Argade{% endblock %}
+{% block body %}
+
+<!-- ═══ SIDEBAR ══════════════════════════════════════════════════ -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-mark">
+      <div class="logo-icon"><i class="fas fa-chart-line" style="color:#000;font-size:14px"></i></div>
+      <div>
+        <div class="logo-text fd">NEXUS</div>
+        <div class="logo-sub">Analytics Platform</div>
+        <div class="logo-byline">by Sarthak Argade</div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Main</div>
+    <div class="nav-item active" id="nav-overview" onclick="showTab('overview')">
+      <i class="nav-icon fas fa-th-large"></i> Overview
+    </div>
+    <div class="nav-item" id="nav-analytics" onclick="showTab('analytics')">
+      <i class="nav-icon fas fa-chart-bar"></i> Analytics
+    </div>
+    <div class="nav-item" id="nav-forecast" onclick="showTab('forecast')">
+      <i class="nav-icon fas fa-brain"></i> AI Forecast
+      <span class="nav-badge">ML</span>
+    </div>
+    <div class="nav-item" id="nav-data" onclick="showTab('data')">
+      <i class="nav-icon fas fa-table"></i> Data Explorer
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Tools</div>
+    <div class="nav-item" id="nav-upload" onclick="showTab('upload')">
+      <i class="nav-icon fas fa-cloud-upload-alt"></i> Upload Data
+    </div>
+    <div class="nav-item" id="nav-reports" onclick="showTab('reports')">
+      <i class="nav-icon fas fa-file-alt"></i> Reports
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">{{ username[0].upper() }}</div>
+      <div class="user-info">
+        <div class="user-name">{{ username }}</div>
+        <div class="user-role">Analytics Pro</div>
+      </div>
+      <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+        <i class="fas fa-sign-out-alt"></i>
+      </a>
+    </div>
+    <div style="text-align:center;font-size:9px;color:var(--text-3);margin-top:8px">
+      NEXUS © <span style="color:var(--accent);font-weight:700">Sarthak Argade</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ MAIN ══════════════════════════════════════════════════════ -->
+<div class="main">
+  <header class="topbar">
+    <button class="btn btn-outline btn-sm" id="menuBtn" onclick="toggleSidebar()" style="display:none">
+      <i class="fas fa-bars"></i>
+    </button>
+    <div class="topbar-title fd" id="topbarTitle">Dashboard Overview</div>
+    <div class="topbar-actions">
+      <div class="search-wrapper" style="width:200px">
+        <i class="fas fa-search"></i>
+        <input class="search-input" id="globalSearch" placeholder="Search…" oninput="debounceSearch(this.value)">
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="hardRefresh()" title="Refresh all charts">
+        <i class="fas fa-sync-alt" id="refreshIcon"></i>
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="showTab('upload')">
+        <i class="fas fa-plus"></i> Upload
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ── FILTER BAR ───────────────────────────────── -->
+    <div class="filter-bar" id="filterBar">
+      <span class="filter-label"><i class="fas fa-sliders-h"></i> Filters</span>
+      <div class="fg">
+        <span class="filter-label">From</span>
+        <input type="date" class="filter-date" id="filterFrom">
+      </div>
+      <div class="fg">
+        <span class="filter-label">To</span>
+        <input type="date" class="filter-date" id="filterTo">
+      </div>
+      <select class="filter-select" id="filterCategory">
+        <option value="all">All Categories</option>
+        {% for c in categories %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+      </select>
+      <select class="filter-select" id="filterRegion">
+        <option value="all">All Regions</option>
+        {% for r in regions %}<option value="{{ r }}">{{ r }}</option>{% endfor %}
+      </select>
+      <select class="filter-select" id="filterProduct">
+        <option value="all">All Products</option>
+        {% for p in products %}<option value="{{ p }}">{{ p }}</option>{% endfor %}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="applyFilters()">
+        <i class="fas fa-check"></i> Apply
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="clearFilters()">
+        <i class="fas fa-times"></i> Clear
+      </button>
+      <div id="filterBadge" style="display:none;margin-left:4px">
+        <span style="background:rgba(0,208,132,0.15);color:var(--accent);border:1px solid rgba(0,208,132,0.3);border-radius:20px;padding:2px 8px;font-size:10px;font-weight:700">
+          <i class="fas fa-circle" style="font-size:6px"></i> FILTERED
+        </span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         TAB: OVERVIEW
+    ════════════════════════════════════════════════ -->
+    <div id="tab-overview" class="tab-content">
+
+      <!-- KPI Cards -->
+      <div class="grid grid-4" style="margin-bottom:16px">
+        <div class="kpi-card" style="--kc:#00d084">
+          <div class="kpi-icon" style="background:rgba(0,208,132,0.13);color:var(--accent)"><i class="fas fa-dollar-sign"></i></div>
+          <div class="kpi-value" id="k-revenue">${{ '{:,.0f}'.format(kpis.total_revenue) }}</div>
+          <div class="kpi-label">Total Revenue</div>
+          <div class="kpi-badge {% if kpis.monthly_growth>=0 %}badge-up{% else %}badge-dn{% endif %}">
+            <i class="fas fa-arrow-{% if kpis.monthly_growth>=0 %}up{% else %}down{% endif %}"></i>
+            {{ kpis.monthly_growth }}% growth
+          </div>
+        </div>
+        <div class="kpi-card" style="--kc:#00b8ff">
+          <div class="kpi-icon" style="background:rgba(0,184,255,0.13);color:var(--accent2)"><i class="fas fa-shopping-cart"></i></div>
+          <div class="kpi-value" id="k-orders">{{ '{:,}'.format(kpis.total_orders) }}</div>
+          <div class="kpi-label">Total Orders</div>
+          <div class="kpi-badge badge-up"><i class="fas fa-check"></i> Active</div>
+        </div>
+        <div class="kpi-card" style="--kc:#c084fc">
+          <div class="kpi-icon" style="background:rgba(192,132,252,0.13);color:#c084fc"><i class="fas fa-users"></i></div>
+          <div class="kpi-value" id="k-customers">{{ kpis.total_customers }}</div>
+          <div class="kpi-label">Unique Customers</div>
+          <div class="kpi-badge badge-nt"><i class="fas fa-minus"></i> Stable</div>
+        </div>
+        <div class="kpi-card" style="--kc:#ffd93d">
+          <div class="kpi-icon" style="background:rgba(255,217,61,0.13);color:var(--accent3)"><i class="fas fa-receipt"></i></div>
+          <div class="kpi-value" id="k-aov">${{ '{:,.0f}'.format(kpis.avg_order_value) }}</div>
+          <div class="kpi-label">Avg Order Value</div>
+          <div class="kpi-badge badge-up"><i class="fas fa-arrow-up"></i> Growing</div>
+        </div>
+        <div class="kpi-card" style="--kc:#00d084">
+          <div class="kpi-icon" style="background:rgba(0,208,132,0.13);color:var(--accent)"><i class="fas fa-chart-pie"></i></div>
+          <div class="kpi-value" id="k-profit">${{ '{:,.0f}'.format(kpis.total_profit) }}</div>
+          <div class="kpi-label">Total Profit</div>
+          <div class="kpi-badge badge-up"><i class="fas fa-percent"></i> {{ kpis.profit_margin }}% margin</div>
+        </div>
+        <div class="kpi-card" style="--kc:#fb923c">
+          <div class="kpi-icon" style="background:rgba(251,146,60,0.13);color:#fb923c"><i class="fas fa-trophy"></i></div>
+          <div class="kpi-value" id="k-best" style="font-size:13px">{{ kpis.best_product }}</div>
+          <div class="kpi-label">Best Product</div>
+          <div class="kpi-badge badge-up"><i class="fas fa-star"></i> Top Seller</div>
+        </div>
+        <div class="kpi-card" style="--kc:#ff4757">
+          <div class="kpi-icon" style="background:rgba(255,71,87,0.13);color:var(--danger)"><i class="fas fa-chart-line"></i></div>
+          <div class="kpi-value" id="k-growth">{{ kpis.monthly_growth }}%</div>
+          <div class="kpi-label">Period Growth</div>
+          <div class="kpi-badge {% if kpis.monthly_growth>=0 %}badge-up{% else %}badge-dn{% endif %}">
+            {% if kpis.monthly_growth>=0 %}Positive{% else %}Needs attention{% endif %}
+          </div>
+        </div>
+        <div class="kpi-card" style="--kc:#00b8ff">
+          <div class="kpi-icon" style="background:rgba(0,184,255,0.13);color:var(--accent2)"><i class="fas fa-database"></i></div>
+          <div class="kpi-value" id="k-margin">{{ kpis.profit_margin }}%</div>
+          <div class="kpi-label">Profit Margin</div>
+          <div class="kpi-badge badge-nt"><i class="fas fa-equals"></i> Consistent</div>
+        </div>
+      </div>
+
+      <!-- Row 1: Monthly + Region -->
+      <div class="grid grid-2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Monthly Revenue & Profit Trend</div><div class="card-subtitle">Sales performance over time</div></div>
+          </div>
+          <div class="ch"><canvas id="c-monthly"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Revenue by Region</div><div class="card-subtitle">Geographic distribution</div></div>
+          </div>
+          <div class="ch"><canvas id="c-region"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Row 2: Products + Segments -->
+      <div class="grid grid-2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Top Products by Revenue</div><div class="card-subtitle">Best performing products</div></div>
+          </div>
+          <div class="ch"><canvas id="c-product"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Customer Segments</div><div class="card-subtitle">Spend tier breakdown</div></div>
+          </div>
+          <div class="ch"><canvas id="c-segments"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Row 3: Weekly trend -->
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Weekly Sales (Last 12 Weeks)</div><div class="card-subtitle">Short-term trend view</div></div>
+        </div>
+        <div class="ch" style="height:200px"><canvas id="c-weekly"></canvas></div>
+      </div>
+
+    </div><!-- /tab-overview -->
+
+    <!-- ═══════════════════════════════════════════════
+         TAB: ANALYTICS
+    ════════════════════════════════════════════════ -->
+    <div id="tab-analytics" class="tab-content" style="display:none">
+      <div class="section-title">Deep Analytics</div>
+      <div class="section-sub">Advanced multi-dimensional breakdowns</div>
+
+      <!-- Revenue vs Profit -->
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <div><div class="card-title">Revenue vs Profit by Product</div><div class="card-subtitle">Comparative margin analysis</div></div>
+        </div>
+        <div class="ch" style="height:320px"><canvas id="c-pvp"></canvas></div>
+      </div>
+
+      <!-- Category + Quantity side by side -->
+      <div class="grid grid-2" style="margin-bottom:14px">
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Sales by Category</div><div class="card-subtitle">Category share</div></div>
+          </div>
+          <div class="ch"><canvas id="c-category"></canvas></div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <div><div class="card-title">Units Sold by Product</div><div class="card-subtitle">Quantity analysis</div></div>
+          </div>
+          <div class="ch"><canvas id="c-qty"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Monthly again for this tab with separate canvas -->
+      <div class="card">
+        <div class="card-header">
+          <div><div class="card-title">Full Monthly Revenue Timeline</div><div class="card-subtitle">Complete history</div></div>
+        </div>
+        <div class="ch" style="height:280px"><canvas id="c-monthly2"></canvas></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         TAB: AI FORECAST
+    ════════════════════════════════════════════════ -->
+    <div id="tab-forecast" class="tab-content" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div>
+          <div class="section-title">AI Sales Forecast</div>
+          <div class="section-sub" style="margin-bottom:0">Random Forest ML — 6-month prediction horizon</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="loadForecast(true)">
+          <i class="fas fa-sync-alt"></i> Re-train
+        </button>
+      </div>
+
+      <div class="card" style="margin-bottom:14px">
+        <div class="card-header">
+          <div><div class="card-title">Revenue Forecast — Next 6 Months</div><div class="card-subtitle">Historical + predicted with confidence band</div></div>
+        </div>
+        <div class="ch" style="height:340px" id="fcWrap">
+          <div class="cload"><div class="spinner"></div><span>Training model…</span></div>
+        </div>
+      </div>
+
+      <div class="grid grid-3">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">
+            <i class="fas fa-lightbulb" style="color:var(--accent3);margin-right:5px"></i>AI Insights
+          </div>
+          <div id="fcInsights"><div class="cload" style="height:80px"><div class="spinner"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">
+            <i class="fas fa-arrow-trend-up" style="color:var(--accent);margin-right:5px"></i>Product Trends
+          </div>
+          <div id="fcTrends"><div class="cload" style="height:80px"><div class="spinner"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title" style="margin-bottom:12px">
+            <i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:5px"></i>Anomalies
+          </div>
+          <div id="fcAnomalies"><div class="cload" style="height:80px"><div class="spinner"></div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         TAB: DATA EXPLORER
+    ════════════════════════════════════════════════ -->
+    <div id="tab-data" class="tab-content" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div>
+          <div class="section-title">Data Explorer</div>
+          <div class="section-sub" style="margin-bottom:0">Browse, search and export records</div>
+        </div>
+        <div style="display:flex;gap:7px">
+          <button class="btn btn-outline btn-sm" onclick="exportCSV()"><i class="fas fa-file-csv"></i> Export CSV</button>
+          <button class="btn btn-primary btn-sm" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> Export PDF</button>
+        </div>
+      </div>
+      <div class="card">
+        <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px">
+          <div class="search-wrapper" style="width:260px">
+            <i class="fas fa-search"></i>
+            <input class="search-input" id="tableSearch" placeholder="Search any field…" oninput="debounceTableSearch(this.value)">
+          </div>
+          <span id="rowCount" style="font-size:11px;color:var(--text-3)"></span>
+        </div>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Date</th><th>Product</th><th>Category</th><th>Region</th>
+                <th>Sales</th><th>Profit</th><th>Qty</th><th>Customer</th>
+              </tr>
+            </thead>
+            <tbody id="tableBody">
+              <tr><td colspan="8"><div class="cload" style="height:50px"><div class="spinner"></div></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--text-3)" id="tableFooter"></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         TAB: UPLOAD
+    ════════════════════════════════════════════════ -->
+    <div id="tab-upload" class="tab-content" style="display:none">
+      <div class="section-title">Upload Dataset</div>
+      <div class="section-sub">Import your own CSV or Excel sales data</div>
+      <div class="grid grid-2" style="align-items:start">
+        <div>
+          <div class="upload-zone" id="uploadZone"
+               onclick="document.getElementById('fileInput').click()"
+               ondragover="event.preventDefault();this.classList.add('dragover')"
+               ondragleave="this.classList.remove('dragover')"
+               ondrop="handleDrop(event)">
+            <div style="font-size:36px;color:var(--text-3);margin-bottom:10px"><i class="fas fa-cloud-upload-alt"></i></div>
+            <div style="font-size:15px;font-weight:600;color:var(--text-1);margin-bottom:4px">Drop file here or click to browse</div>
+            <div style="font-size:11px;color:var(--text-3)">CSV · XLSX · XLS · Max 16MB</div>
+            <div style="margin-top:12px"><span class="btn btn-outline btn-sm"><i class="fas fa-folder-open"></i> Browse Files</span></div>
+          </div>
+          <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="uploadFile(this.files[0])">
+          <div id="uploadStatus" style="margin-top:12px"></div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:12px">
+            <div class="card-title" style="margin-bottom:10px"><i class="fas fa-info-circle" style="color:var(--accent2);margin-right:5px"></i>Required Columns</div>
+            <div style="font-size:11px;color:var(--text-2);line-height:2.2">
+              <b style="color:var(--accent)">Date</b> — Transaction date (YYYY-MM-DD)<br>
+              <b style="color:var(--accent)">Sales</b> — Revenue amount (required)<br>
+              <span style="color:var(--text-3)">Product · Category · Region · Profit · Quantity · Customer_Name — optional</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title" style="margin-bottom:10px"><i class="fas fa-database" style="color:var(--accent3);margin-right:5px"></i>Your Datasets</div>
+            {% if datasets %}
+              {% for ds in datasets %}
+              <div style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:7px;background:var(--bg-elevated);margin-bottom:6px">
+                <div style="width:28px;height:28px;background:rgba(0,208,132,0.1);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--accent);font-size:11px">
+                  <i class="fas fa-file-csv"></i>
+                </div>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:11px;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ ds.name }}</div>
+                  <div style="font-size:9px;color:var(--text-3)">{{ ds.rows }} rows · {{ ds.columns }} cols · {{ ds.uploaded_at.strftime('%b %d, %Y') }}</div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div style="text-align:center;padding:20px;font-size:11px;color:var(--text-3)">No datasets uploaded yet.</div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════
+         TAB: REPORTS
+    ════════════════════════════════════════════════ -->
+    <div id="tab-reports" class="tab-content" style="display:none">
+      <div class="section-title">Export Reports</div>
+      <div class="section-sub">Download business intelligence reports — NEXUS by Sarthak Argade</div>
+      <div class="grid grid-3" style="margin-bottom:16px">
+        <div class="card" style="text-align:center;padding:32px">
+          <div style="width:56px;height:56px;background:rgba(255,71,87,0.12);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;color:var(--danger)">
+            <i class="fas fa-file-pdf"></i>
+          </div>
+          <div class="fd" style="font-size:16px;font-weight:700;margin-bottom:6px">PDF Report</div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:20px">Full business summary with KPIs and product analysis</div>
+          <button class="btn btn-primary" onclick="exportPDF()" style="width:100%"><i class="fas fa-download"></i> Download PDF</button>
+        </div>
+        <div class="card" style="text-align:center;padding:32px">
+          <div style="width:56px;height:56px;background:rgba(0,208,132,0.12);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;color:var(--accent)">
+            <i class="fas fa-file-csv"></i>
+          </div>
+          <div class="fd" style="font-size:16px;font-weight:700;margin-bottom:6px">CSV Export</div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:20px">Export filtered data as a spreadsheet file</div>
+          <button class="btn btn-outline" onclick="exportCSV()" style="width:100%"><i class="fas fa-download"></i> Download CSV</button>
+        </div>
+        <div class="card" style="text-align:center;padding:32px">
+          <div style="width:56px;height:56px;background:rgba(0,184,255,0.12);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;color:var(--accent2)">
+            <i class="fas fa-eye"></i>
+          </div>
+          <div class="fd" style="font-size:16px;font-weight:700;margin-bottom:6px">Live Summary</div>
+          <div style="font-size:11px;color:var(--text-3);margin-bottom:20px">View current KPI snapshot in dashboard</div>
+          <button class="btn btn-outline" onclick="toggleSummary()" style="width:100%"><i class="fas fa-chart-bar"></i> View Summary</button>
+        </div>
+      </div>
+      <div id="summaryBox" style="display:none">
+        <div class="card">
+          <div class="card-title" style="margin-bottom:14px">Live KPI Snapshot</div>
+          <div id="summaryContent"></div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+{% endblock %}
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+'use strict';
+
+// ── Chart.js global defaults ────────────────────────────────────────
+Chart.defaults.color          = '#8899aa';
+Chart.defaults.font.family    = 'DM Sans, sans-serif';
+Chart.defaults.font.size      = 11;
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+
+const PAL   = ['#00d084','#00b8ff','#ffd93d','#ff6b6b','#c084fc','#fb923c','#34d399','#60a5fa','#f472b6','#a78bfa'];
+const GRID  = { color:'rgba(255,255,255,0.05)', drawBorder:false };
+const NO_ANIM = { duration:0 };
+
+// Registry — so we can destroy before redrawing
+const CHARTS = {};
+function kill(id){ if(CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; } }
+function make(id, cfg){
+  kill(id);
+  const ctx = document.getElementById(id);
+  if(!ctx) return;
+  CHARTS[id] = new Chart(ctx, cfg);
+}
+
+// ── State ───────────────────────────────────────────────────────────
+let currentTab   = 'overview';
+let tabLoaded    = {};          // tracks what's been drawn
+let latestData   = null;        // last chartdata response
+let fcLoaded     = false;
+let searchTO, tableSearchTO;
+
+const TITLES = {
+  overview:'Dashboard Overview', analytics:'Deep Analytics',
+  forecast:'AI Sales Forecast',  data:'Data Explorer',
+  upload:'Upload Dataset',       reports:'Export Reports'
+};
+
+// ── Utility ─────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const fmt = v => '$' + parseFloat(v).toLocaleString('en-US',{maximumFractionDigits:0});
+
+function getFilters(){
+  return new URLSearchParams({
+    date_from: $('filterFrom').value  || '',
+    date_to:   $('filterTo').value    || '',
+    category:  $('filterCategory').value,
+    region:    $('filterRegion').value,
+    product:   $('filterProduct').value,
+  });
+}
+
+function isFiltered(){
+  return $('filterFrom').value || $('filterTo').value ||
+         $('filterCategory').value !== 'all' ||
+         $('filterRegion').value   !== 'all' ||
+         $('filterProduct').value  !== 'all';
+}
+
+function showMsg(msg, type='error'){
+  const el = document.createElement('div');
+  el.className = `flash ${type}`;
+  el.innerHTML = `<i class="fas fa-${type==='error'?'exclamation-circle':'check-circle'}"></i>${msg}
+    <span class="flash-close" onclick="this.parentElement.remove()"><i class="fas fa-times"></i></span>`;
+  document.querySelector('.flash-container').appendChild(el);
+  setTimeout(()=>el.remove(), 5000);
+}
+
+// ── Tab navigation ──────────────────────────────────────────────────
+function showTab(name){
+  document.querySelectorAll('.tab-content').forEach(t => t.style.display = 'none');
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const el = $('tab-'+name); if(el) el.style.display = '';
+  const nav = $('nav-'+name); if(nav) nav.classList.add('active');
+  $('topbarTitle').textContent = TITLES[name] || name;
+  currentTab = name;
+  $('filterBar').style.display = ['upload','reports'].includes(name) ? 'none' : 'flex';
+
+  if(name === 'overview')  loadOverview();
+  if(name === 'analytics') loadAnalytics();
+  if(name === 'forecast' && !fcLoaded) loadForecast(false);
+  if(name === 'data')      loadTable();
+}
+
+// ── Filters ─────────────────────────────────────────────────────────
+function applyFilters(){
+  tabLoaded = {};                           // force full redraw
+  $('filterBadge').style.display = isFiltered() ? 'block' : 'none';
+  if(currentTab === 'overview')  loadOverview(true);
+  else if(currentTab === 'analytics') loadAnalytics(true);
+  else if(currentTab === 'data')      loadTable();
+}
+
+function clearFilters(){
+  $('filterFrom').value   = '';
+  $('filterTo').value     = '';
+  $('filterCategory').value = 'all';
+  $('filterRegion').value   = 'all';
+  $('filterProduct').value  = 'all';
+  $('filterBadge').style.display = 'none';
+  tabLoaded = {};
+  if(currentTab === 'overview')  loadOverview(true);
+  else if(currentTab === 'analytics') loadAnalytics(true);
+  else if(currentTab === 'data')      loadTable();
+}
+
+function hardRefresh(){
+  const icon = $('refreshIcon');
+  icon.classList.add('fa-spin');
+  tabLoaded = {}; fcLoaded = false;
+  const done = () => icon.classList.remove('fa-spin');
+  if(currentTab === 'overview')       loadOverview(true,  done);
+  else if(currentTab === 'analytics') loadAnalytics(true, done);
+  else if(currentTab === 'forecast')  loadForecast(true,  done);
+  else if(currentTab === 'data')      { loadTable(); done(); }
+  else done();
+}
+
+// ── KPI updater ──────────────────────────────────────────────────────
+function updateKPIs(k){
+  if(!k) return;
+  $('k-revenue').textContent   = fmt(k.total_revenue);
+  $('k-orders').textContent    = parseInt(k.total_orders).toLocaleString();
+  $('k-customers').textContent = k.total_customers;
+  $('k-aov').textContent       = fmt(k.avg_order_value);
+  $('k-profit').textContent    = fmt(k.total_profit);
+  $('k-best').textContent      = k.best_product;
+  $('k-growth').textContent    = k.monthly_growth + '%';
+  $('k-margin').textContent    = k.profit_margin + '%';
+}
+
+// ── Fetch chart data ─────────────────────────────────────────────────
+function fetchChartData(cb){
+  fetch('/api/chartdata?' + getFilters())
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(d => { if(d.error) throw new Error(d.error); latestData = d; cb(d); })
+    .catch(e => showMsg('Chart data error: ' + e.message));
+}
+
+// ── OVERVIEW charts ──────────────────────────────────────────────────
+function loadOverview(force, done){
+  if(!force && tabLoaded.overview){ if(done) done(); return; }
+  tabLoaded.overview = true;
+  fetchChartData(d => {
+    updateKPIs(d.kpis);
+    drawMonthly('c-monthly', d.monthly);
+    drawRegion(d.region);
+    drawProduct(d.product);
+    drawSegments(d.segments);
+    drawWeekly(d.weekly);
+    if(done) done();
+  });
+}
+
+// ── ANALYTICS charts ─────────────────────────────────────────────────
+function loadAnalytics(force, done){
+  if(!force && tabLoaded.analytics){ if(done) done(); return; }
+  tabLoaded.analytics = true;
+  fetchChartData(d => {
+    drawPvP(d.pvp);
+    drawCategory(d.category);
+    drawQty(d.qty);
+    drawMonthly('c-monthly2', d.monthly);  // second copy of monthly
+    if(done) done();
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────
+// Individual chart draw functions
+// ────────────────────────────────────────────────────────────────────
+
+function drawMonthly(canvasId, data){
+  if(!data || !data.labels.length) return;
+  make(canvasId, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [
+        { label:'Revenue', data:data.sales,
+          borderColor:'#00d084', backgroundColor:'rgba(0,208,132,0.07)',
+          borderWidth:2.5, fill:true, tension:0.35, pointRadius:3, pointHoverRadius:5 },
+        { label:'Profit',  data:data.profit,
+          borderColor:'#00b8ff', backgroundColor:'rgba(0,184,255,0.04)',
+          borderWidth:2, fill:true, tension:0.35, pointRadius:3,
+          borderDash:[5,4] }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'top' } },
+      scales:{
+        x:{ grid:GRID, ticks:{ maxTicksLimit:10, maxRotation:30 } },
+        y:{ grid:GRID, ticks:{ callback: v => '$'+v.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function drawRegion(data){
+  if(!data || !data.labels.length) return;
+  make('c-region', {
+    type:'doughnut',
+    data:{
+      labels: data.labels,
+      datasets:[{ data:data.values,
+        backgroundColor: PAL.map(c => c+'cc'),
+        borderColor:'#111820', borderWidth:3, hoverOffset:8 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      cutout:'58%',
+      plugins:{
+        legend:{ position:'right' },
+        tooltip:{ callbacks:{ label: ctx => ' ' + ctx.label + ': $' + ctx.parsed.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function drawProduct(data){
+  if(!data || !data.labels.length) return;
+  make('c-product', {
+    type:'bar',
+    data:{
+      labels: data.labels,
+      datasets:[{ label:'Revenue', data:data.values,
+        backgroundColor: data.values.map((_,i) => PAL[i%PAL.length]+'bb'),
+        borderColor:      data.values.map((_,i) => PAL[i%PAL.length]),
+        borderWidth:1, borderRadius:4, borderSkipped:false }]
+    },
+    options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:GRID, ticks:{ callback: v => '$'+v.toLocaleString() } },
+        y:{ grid:{ display:false } }
+      }
+    }
+  });
+}
+
+function drawSegments(data){
+  if(!data || !data.labels.length) return;
+  make('c-segments', {
+    type:'bar',
+    data:{
+      labels: data.labels,
+      datasets:[{ label:'Customers', data:data.values,
+        backgroundColor:['rgba(205,127,50,0.75)','rgba(192,192,192,0.75)','rgba(255,215,0,0.75)','rgba(229,228,226,0.75)'],
+        borderColor:    ['#cd7f32','#c0c0c0','#ffd700','#e5e4e2'],
+        borderWidth:1, borderRadius:4 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ display:false } },
+        y:{ grid:GRID }
+      }
+    }
+  });
+}
+
+function drawWeekly(data){
+  if(!data || !data.labels.length) return;
+  make('c-weekly', {
+    type:'bar',
+    data:{
+      labels: data.labels.map(l => l.split('/')[0]),  // show start of week only
+      datasets:[{ label:'Weekly Sales', data:data.values,
+        backgroundColor: data.values.map(v => {
+          const max = Math.max(...data.values);
+          const pct = v/max;
+          return pct > 0.8 ? 'rgba(0,208,132,0.85)' : pct > 0.5 ? 'rgba(0,184,255,0.75)' : 'rgba(255,217,61,0.65)';
+        }),
+        borderRadius:4 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ maxRotation:30 } },
+        y:{ grid:GRID, ticks:{ callback: v => '$'+v.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function drawPvP(data){
+  if(!data || !data.labels.length) return;
+  make('c-pvp', {
+    type:'bar',
+    data:{
+      labels: data.labels,
+      datasets:[
+        { label:'Revenue', data:data.sales,
+          backgroundColor:'rgba(0,208,132,0.75)', borderRadius:3 },
+        { label:'Profit',  data:data.profit,
+          backgroundColor:'rgba(0,184,255,0.75)', borderRadius:3 }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'top' } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ maxRotation:35 } },
+        y:{ grid:GRID, ticks:{ callback: v => '$'+v.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function drawCategory(data){
+  if(!data || !data.labels.length) return;
+  make('c-category', {
+    type:'pie',
+    data:{
+      labels: data.labels,
+      datasets:[{ data:data.values,
+        backgroundColor: PAL.map(c => c+'cc'),
+        borderColor:'#111820', borderWidth:2 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'right' },
+        tooltip:{ callbacks:{ label: ctx => ' '+ctx.label+': $'+ctx.parsed.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function drawQty(data){
+  if(!data || !data.labels.length) return;
+  make('c-qty', {
+    type:'bar',
+    data:{
+      labels: data.labels,
+      datasets:[{ label:'Units Sold', data:data.values,
+        backgroundColor: PAL.map(c => c+'99'),
+        borderColor: PAL,
+        borderWidth:1, borderRadius:4 }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ display:false }, ticks:{ maxRotation:35 } },
+        y:{ grid:GRID }
+      }
+    }
+  });
+}
+
+// ── FORECAST ────────────────────────────────────────────────────────
+function loadForecast(force, done){
+  if(!force && fcLoaded){ if(done) done(); return; }
+  fcLoaded = true;
+  $('fcWrap').innerHTML = '<div class="cload"><div class="spinner"></div><span>Training Random Forest model…</span></div>';
+  ['fcInsights','fcTrends','fcAnomalies'].forEach(id => {
+    $(id).innerHTML = '<div class="cload" style="height:70px"><div class="spinner"></div></div>';
+  });
+
+  fetch('/api/forecast')
+    .then(r => { if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+    .then(d => {
+      if(d.error){ $('fcWrap').innerHTML='<div class="cload" style="color:var(--danger)"><i class="fas fa-exclamation-triangle" style="font-size:20px;margin-bottom:8px"></i><div>'+d.error+'</div></div>'; return; }
+      drawForecast(d.forecast);
+      renderInsights(d.insights);
+      renderTrends(d.top_products, d.declining);
+      renderAnomalies(d.anomalies);
+      if(done) done();
+    })
+    .catch(e => { $('fcWrap').innerHTML='<div class="cload" style="color:var(--danger)">Error: '+e.message+'</div>'; if(done) done(); });
+}
+
+function drawForecast(fc){
+  $('fcWrap').innerHTML = '<canvas id="c-forecast"></canvas>';
+  make('c-forecast', {
+    type:'line',
+    data:{
+      labels: [...fc.hist_labels, ...fc.future_labels],
+      datasets:[
+        { label:'Historical',  data:[...fc.hist_values, ...Array(fc.future_labels.length).fill(null)],
+          borderColor:'#00d084', backgroundColor:'rgba(0,208,132,0.06)',
+          borderWidth:2.5, fill:true, tension:0.35, pointRadius:3 },
+        { label:'Forecast',    data:[...Array(fc.hist_labels.length).fill(null), ...fc.future_values],
+          borderColor:'#ffd93d', backgroundColor:'rgba(255,217,61,0.06)',
+          borderWidth:2.5, borderDash:[7,4], fill:true, tension:0.35,
+          pointStyle:'rectRot', pointRadius:7 },
+        { label:'Upper',       data:[...Array(fc.hist_labels.length).fill(null), ...fc.upper],
+          borderColor:'rgba(255,217,61,0.25)', backgroundColor:'transparent',
+          borderWidth:1, borderDash:[3,3], pointRadius:0 },
+        { label:'Lower',       data:[...Array(fc.hist_labels.length).fill(null), ...fc.lower],
+          borderColor:'rgba(255,217,61,0.25)', backgroundColor:'rgba(255,217,61,0.05)',
+          borderWidth:1, borderDash:[3,3], pointRadius:0, fill:'-1' },
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{ position:'top' },
+        tooltip:{ callbacks:{ label: ctx => ' '+ctx.dataset.label+': $'+parseFloat(ctx.parsed.y||0).toLocaleString() } }
+      },
+      scales:{
+        x:{ grid:GRID, ticks:{ maxTicksLimit:14, maxRotation:30 } },
+        y:{ grid:GRID, ticks:{ callback: v => '$'+v.toLocaleString() } }
+      }
+    }
+  });
+}
+
+function renderInsights(ins){
+  if(!ins){ $('fcInsights').innerHTML='<div style="font-size:11px;color:var(--text-3)">Insufficient data.</div>'; return; }
+  const up = ins.trend === 'upward';
+  $('fcInsights').innerHTML = `
+    <div style="background:linear-gradient(135deg,rgba(0,208,132,0.05),rgba(0,184,255,0.04));border:1px solid rgba(0,208,132,0.18);border-radius:10px;padding:14px">
+      <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:4px;background:rgba(0,208,132,0.13);color:var(--accent);display:inline-block;margin-bottom:8px">ML PREDICTION</div>
+      <div style="font-size:12px;color:var(--text-1);line-height:1.7">
+        ${up?'📈':'📉'} Trend is <b style="color:${up?'var(--accent)':'var(--danger)'}">${ins.trend}</b> by ${ins.change}% over 6 months.<br>
+        <b>Next month:</b> $${ins.next.toLocaleString()}<br>
+        <b>Month 6:</b> $${ins.sixth.toLocaleString()}<br>
+        <b>Model MAE:</b> $${ins.mae.toLocaleString()}
+      </div>
+    </div>`;
+}
+
+function renderTrends(top, dec){
+  let h = '<div style="font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:6px">Rising ▲</div>';
+  if(top && Object.keys(top).length)
+    Object.entries(top).forEach(([p,v]) => { h+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px">${p}</span><span style="color:var(--accent);font-size:11px;font-weight:700">+${v}%</span></div>`; });
+  else h += '<div style="font-size:11px;color:var(--text-3)">Insufficient history</div>';
+  h += '<div style="font-size:9px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin:10px 0 6px">Declining ▼</div>';
+  if(dec && Object.keys(dec).length)
+    Object.entries(dec).forEach(([p,v]) => { h+=`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span style="font-size:11px">${p}</span><span style="color:var(--danger);font-size:11px;font-weight:700">${v}%</span></div>`; });
+  else h += '<div style="font-size:11px;color:var(--text-3)">Insufficient history</div>';
+  $('fcTrends').innerHTML = h;
+}
+
+function renderAnomalies(anom){
+  if(!anom || !anom.length){
+    $('fcAnomalies').innerHTML='<div style="text-align:center;padding:16px"><i class="fas fa-check-circle" style="color:var(--accent);font-size:22px;display:block;margin-bottom:6px"></i><div style="font-size:11px;color:var(--text-3)">No anomalies detected</div></div>';
+    return;
+  }
+  $('fcAnomalies').innerHTML = anom.map(a =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 10px;border-radius:7px;background:rgba(255,71,87,0.07);border:1px solid rgba(255,71,87,0.18);margin-bottom:5px">
+      <span style="font-size:11px;font-weight:600">${a.month}</span>
+      <span style="color:var(--danger);font-size:11px;font-weight:700">$${parseFloat(a.sales).toLocaleString('en-US',{maximumFractionDigits:0})}</span>
+    </div>`
+  ).join('');
+}
+
+// ── DATA TABLE ───────────────────────────────────────────────────────
+const CAT_BADGES = {
+  Electronics:'badge-Electronics', Peripherals:'badge-Peripherals',
+  Audio:'badge-Audio', Storage:'badge-Storage',
+  Accessories:'badge-Accessories', Office:'badge-Office'
+};
+
+function loadTable(search){
+  const url = search
+    ? '/api/search?q=' + encodeURIComponent(search)
+    : '/api/table?' + getFilters();
+
+  $('tableBody').innerHTML = '<tr><td colspan="8"><div class="cload" style="height:50px"><div class="spinner"></div></div></td></tr>';
+
+  fetch(url)
+    .then(r => r.json())
+    .then(rows => {
+      if(!rows.length){
+        $('tableBody').innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--text-3);padding:20px">No records found</td></tr>';
+        $('tableFooter').textContent = '0 records';
+        $('rowCount').textContent = '';
+        return;
+      }
+      $('tableBody').innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.Date||''}</td>
+          <td><b style="color:var(--text-1)">${r.Product||''}</b></td>
+          <td><span class="badge ${CAT_BADGES[r.Category]||''}">${r.Category||''}</span></td>
+          <td>${r.Region||''}</td>
+          <td style="color:var(--accent);font-weight:700">${fmt(r.Sales||0)}</td>
+          <td style="color:var(--accent2)">${fmt(r.Profit||0)}</td>
+          <td>${r.Quantity||''}</td>
+          <td style="color:var(--text-3)">${r.Customer_Name||''}</td>
+        </tr>`).join('');
+      $('tableFooter').textContent = `Showing ${rows.length} records`;
+      $('rowCount').textContent = rows.length + ' rows';
+    })
+    .catch(e => showMsg('Table load error: ' + e.message));
+}
+
+function debounceSearch(v){
+  clearTimeout(searchTO);
+  if(currentTab === 'data') searchTO = setTimeout(() => loadTable(v), 350);
+}
+
+function debounceTableSearch(v){
+  clearTimeout(tableSearchTO);
+  tableSearchTO = setTimeout(() => loadTable(v), 350);
+}
+
+// ── UPLOAD ───────────────────────────────────────────────────────────
+function handleDrop(e){
+  e.preventDefault();
+  $('uploadZone').classList.remove('dragover');
+  uploadFile(e.dataTransfer.files[0]);
+}
+
+function uploadFile(file){
+  if(!file) return;
+  const st = $('uploadStatus');
+  st.innerHTML = '<div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-3)"><div class="spinner" style="width:14px;height:14px;border-width:2px"></div>Uploading and validating…</div>';
+  const fd = new FormData(); fd.append('file', file);
+  fetch('/upload',{method:'POST',body:fd})
+    .then(r => r.json())
+    .then(d => {
+      if(d.success){
+        st.innerHTML=`<div style="background:rgba(0,208,132,0.08);border:1px solid rgba(0,208,132,0.25);border-radius:8px;padding:12px;font-size:11px;color:var(--accent)"><i class="fas fa-check-circle"></i> <b>${d.name}</b> uploaded — ${d.rows.toLocaleString()} rows · ${d.columns} columns. Reloading…</div>`;
+        setTimeout(()=>location.reload(), 1800);
+      } else {
+        st.innerHTML=`<div style="background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.25);border-radius:8px;padding:12px;font-size:11px;color:var(--danger)"><i class="fas fa-exclamation-triangle"></i> ${d.error}</div>`;
+      }
+    })
+    .catch(()=>st.innerHTML='<div style="color:var(--danger);font-size:11px">Upload failed. Try again.</div>');
+}
+
+// ── EXPORTS ──────────────────────────────────────────────────────────
+function exportCSV(){ window.location.href = '/export/csv?' + getFilters(); }
+function exportPDF(){ window.location.href = '/export/pdf'; }
+
+function toggleSummary(){
+  const b = $('summaryBox');
+  b.style.display = b.style.display === 'none' ? '' : 'none';
+  if(b.style.display !== 'none'){
+    fetchChartData(d => {
+      const k = d.kpis;
+      $('summaryContent').innerHTML = `
+        <div class="grid grid-4">
+          ${[['Total Revenue',fmt(k.total_revenue),'var(--accent)'],
+             ['Orders',parseInt(k.total_orders).toLocaleString(),'var(--accent2)'],
+             ['Profit Margin',k.profit_margin+'%','#c084fc'],
+             ['Growth',k.monthly_growth+'%',k.monthly_growth>=0?'var(--accent)':'var(--danger)']
+            ].map(([l,v,c])=>`
+            <div style="background:var(--bg-elevated);border-radius:10px;padding:16px;text-align:center">
+              <div style="font-size:20px;font-weight:700;color:${c};font-family:'Space Grotesk',sans-serif">${v}</div>
+              <div style="font-size:10px;color:var(--text-3);margin-top:4px">${l}</div>
+            </div>`).join('')}
+        </div>`;
+    });
+  }
+}
+
+// ── MISC ─────────────────────────────────────────────────────────────
+function toggleSidebar(){ $('sidebar').classList.toggle('open'); }
+
+window.addEventListener('resize',() => {
+  $('menuBtn').style.display = window.innerWidth < 880 ? 'flex' : 'none';
+});
+window.dispatchEvent(new Event('resize'));
+
+// ── BOOT ─────────────────────────────────────────────────────────────
+loadOverview();
+</script>
+{% endblock %}

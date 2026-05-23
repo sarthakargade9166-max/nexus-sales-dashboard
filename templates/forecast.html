@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+{% block title %}AI Forecast{% endblock %}
+{% block page_title %}
+  <i class="bi bi-lightning-charge-fill me-2 text-green"></i>AI Sales Forecast
+{% endblock %}
+
+{% block content %}
+{% if not dataset %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="bi bi-lightning-charge"></i></div>
+  <h4>No Dataset Loaded</h4>
+  <p class="text-muted">Upload a dataset to run ML forecasting.</p>
+  <a href="{{ url_for('upload') }}" class="btn btn-green">Upload Dataset</a>
+</div>
+{% else %}
+
+<div class="forecast-layout">
+
+  <!-- Control Panel -->
+  <div class="forecast-panel">
+    <div class="panel-header">
+      <i class="bi bi-sliders me-2 text-green"></i>Forecast Settings
+    </div>
+    <div class="panel-body">
+      <div class="form-group">
+        <label class="form-label-custom">ML Model</label>
+        <select class="form-select-custom" id="fModel">
+          <option value="linear">Linear Regression + Seasonality</option>
+          <option value="random_forest">Random Forest (≥12mo data)</option>
+        </select>
+        <p class="form-hint">Linear is more stable for small datasets; Random Forest captures non-linear patterns better.</p>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label-custom">Forecast Horizon</label>
+        <div class="period-selector" id="periodSelector">
+          {% for p in [3, 6, 9, 12] %}
+          <button class="period-btn {% if p==6 %}active{% endif %}" onclick="selectPeriod(this, {{ p }})">{{ p }}mo</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" id="fPeriods" value="6">
+      </div>
+
+      <button class="btn-forecast" onclick="runForecast()" id="runBtn">
+        <i class="bi bi-lightning-charge-fill me-2"></i>Run Forecast
+        <span class="spinner-sm" id="fSpinner" style="display:none"></span>
+      </button>
+
+      <!-- Anomaly Detection -->
+      <div class="anomaly-section mt-4">
+        <div class="section-divider">Anomaly Detection</div>
+        <button class="btn-secondary-sm w-100" onclick="runAnomalies()" id="anomBtn">
+          <i class="bi bi-search me-2"></i>Detect Anomalies
+        </button>
+        <div id="anomalyResults" class="anomaly-results mt-3"></div>
+      </div>
+    </div>
+
+    <!-- Active Dataset Info -->
+    <div class="panel-footer">
+      <div class="ds-info">
+        <i class="bi bi-database-fill-check me-2 text-green"></i>
+        <span>{{ dataset.original_filename[:32] }}{% if dataset.original_filename|length > 32 %}…{% endif %}</span>
+      </div>
+      <div class="ds-meta">{{ '{:,}'.format(dataset.row_count) }} rows</div>
+    </div>
+  </div>
+
+  <!-- Results Area -->
+  <div class="forecast-results">
+    <!-- Placeholder before first run -->
+    <div id="forecastPlaceholder" class="forecast-placeholder">
+      <div class="placeholder-icon"><i class="bi bi-graph-up-arrow"></i></div>
+      <h5>Ready to Forecast</h5>
+      <p class="text-muted">Configure settings and click <strong>Run Forecast</strong> to generate AI predictions.</p>
+      <div class="feature-list">
+        <div class="feat"><i class="bi bi-check2-circle text-green"></i> Seasonal trend decomposition</div>
+        <div class="feat"><i class="bi bi-check2-circle text-green"></i> Confidence interval bands</div>
+        <div class="feat"><i class="bi bi-check2-circle text-green"></i> Model performance metrics</div>
+        <div class="feat"><i class="bi bi-check2-circle text-green"></i> Monthly prediction table</div>
+      </div>
+    </div>
+
+    <!-- Forecast Chart -->
+    <div id="forecastChartWrap" style="display:none">
+      <div class="chart-card mb-4">
+        <div class="chart-header">
+          <span><i class="bi bi-activity me-2 text-green"></i>Sales Forecast</span>
+          <div class="legend-mini ms-auto">
+            <span class="leg-green">▬ Actual</span>
+            <span class="leg-blue">- Fitted</span>
+            <span class="leg-orange">⬥ Forecast</span>
+          </div>
+        </div>
+        <div id="forecastChart" style="min-height:450px"><div class="chart-loading"><span class="spinner"></span></div></div>
+      </div>
+
+      <!-- Metrics Cards -->
+      <div class="metrics-row mb-4" id="metricsRow">
+        <div class="metric-card">
+          <div class="metric-label">Model</div>
+          <div class="metric-value" id="mModel">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">Training Months</div>
+          <div class="metric-value" id="mMonths">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">R² Score</div>
+          <div class="metric-value" id="mR2">—</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-label">MAE</div>
+          <div class="metric-value" id="mMAE">—</div>
+        </div>
+      </div>
+
+      <!-- Forecast Table -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <span><i class="bi bi-table me-2 text-green"></i>Monthly Predictions</span>
+        </div>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Month</th>
+                <th>Forecast</th>
+                <th>Low (−15%)</th>
+                <th>High (+15%)</th>
+              </tr>
+            </thead>
+            <tbody id="forecastTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- History -->
+{% if history %}
+<div class="chart-card mt-4">
+  <div class="chart-header"><i class="bi bi-clock-history me-2 text-green"></i>Recent Forecasts</div>
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead><tr><th>Date</th><th>Model</th><th>Metrics</th></tr></thead>
+      <tbody>
+        {% for h in history %}
+        <tr>
+          <td>{{ h.created_at.strftime('%d %b %Y %H:%M') }}</td>
+          <td><span class="badge-model">{{ h.model_type }}</span></td>
+          <td>
+            {% if h.metrics_json %}
+              {% set m = h.metrics_json|tojson %}
+              <span class="text-muted text-sm">{{ h.metrics_json }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function selectPeriod(btn, val) {
+  document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('fPeriods').value = val;
+}
+
+function runForecast() {
+  const runBtn = document.getElementById('runBtn');
+  const spinner = document.getElementById('fSpinner');
+  runBtn.disabled = true;
+  spinner.style.display = 'inline-block';
+
+  const payload = {
+    model: document.getElementById('fModel').value,
+    periods: parseInt(document.getElementById('fPeriods').value),
+  };
+
+  fetch('/api/forecast', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(payload)
+  })
+  .then(r => r.json())
+  .then(d => {
+    runBtn.disabled = false;
+    spinner.style.display = 'none';
+
+    if (d.error) {
+      showError(d.error);
+      return;
+    }
+
+    document.getElementById('forecastPlaceholder').style.display = 'none';
+    document.getElementById('forecastChartWrap').style.display = 'block';
+
+    renderChart('forecastChart', d.chart);
+
+    // Metrics
+    const m = d.metrics;
+    document.getElementById('mModel').textContent = m.model.replace('_',' ');
+    document.getElementById('mMonths').textContent = m.training_months || '—';
+    document.getElementById('mR2').textContent = m.r2.toFixed(4);
+    document.getElementById('mMAE').textContent = fmtUSD(m.mae);
+
+    // Table
+    const tbody = document.getElementById('forecastTableBody');
+    tbody.innerHTML = d.table.map(row =>
+      `<tr>
+        <td>${row.month}</td>
+        <td class="text-green fw-semibold">${row.forecast}</td>
+        <td class="text-muted">${row.low}</td>
+        <td class="text-muted">${row.high}</td>
+      </tr>`
+    ).join('');
+  })
+  .catch(e => {
+    runBtn.disabled = false;
+    spinner.style.display = 'none';
+    showError(e.message);
+  });
+}
+
+function runAnomalies() {
+  const btn = document.getElementById('anomBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-sm"></span> Detecting…';
+
+  fetch('/api/anomalies').then(r=>r.json()).then(d=>{
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-search me-2"></i>Detect Anomalies';
+    const res = document.getElementById('anomalyResults');
+    if (d.error) {
+      res.innerHTML = `<div class="no-data-msg">${d.error}</div>`;
+      return;
+    }
+    if (!d.anomalies.length) {
+      res.innerHTML = `<div class="anom-ok"><i class="bi bi-check-circle-fill text-green me-2"></i>No anomalies detected</div>`;
+      return;
+    }
+    res.innerHTML = `<div class="anom-header"><i class="bi bi-exclamation-triangle-fill text-orange me-2"></i>${d.anomalies.length} anomalous months found</div>` +
+      d.anomalies.map(a => `<div class="anom-item"><span>${a.month}</span><span class="text-orange">${fmtUSD(a.sales)}</span></div>`).join('');
+  }).catch(e=>{
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-search me-2"></i>Detect Anomalies';
+  });
+}
+
+function showError(msg) {
+  const el = document.getElementById('forecastPlaceholder');
+  el.style.display = 'flex';
+  el.innerHTML = `<div class="placeholder-icon text-red"><i class="bi bi-exclamation-triangle"></i></div>
+    <h5 class="text-red">Forecast Failed</h5>
+    <p class="text-muted">${msg}</p>
+    <p class="text-muted text-sm">Ensure your dataset has <code>Date</code> and <code>Sales</code>/<code>Revenue</code> columns.</p>`;
+}
+</script>
+{% endblock %}

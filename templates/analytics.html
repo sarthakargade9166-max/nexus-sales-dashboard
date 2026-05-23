@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block page_title %}
+  <i class="bi bi-bar-chart-line-fill me-2 text-green"></i>Analytics
+{% endblock %}
+
+{% block content %}
+{% if not dataset %}
+<div class="empty-state">
+  <div class="empty-icon"><i class="bi bi-bar-chart-line"></i></div>
+  <h4>No Dataset Loaded</h4>
+  <p class="text-muted">Upload a dataset to explore analytics.</p>
+  <a href="{{ url_for('upload') }}" class="btn btn-green">Upload Dataset</a>
+</div>
+{% else %}
+
+<!-- Filter Bar -->
+<div class="filter-bar mb-4">
+  <div class="filter-item">
+    <label class="filter-label"><i class="bi bi-calendar3 me-1"></i>Date From</label>
+    <input type="date" class="filter-input" id="fFrom">
+  </div>
+  <div class="filter-item">
+    <label class="filter-label"><i class="bi bi-calendar3 me-1"></i>Date To</label>
+    <input type="date" class="filter-input" id="fTo">
+  </div>
+  <div class="filter-item">
+    <label class="filter-label"><i class="bi bi-tag me-1"></i>Category</label>
+    <select class="filter-input" id="fCat">
+      <option value="all">All Categories</option>
+      {% for c in categories %}
+        <option value="{{ c }}">{{ c }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-item">
+    <label class="filter-label"><i class="bi bi-geo-alt me-1"></i>Region</label>
+    <select class="filter-input" id="fReg">
+      <option value="all">All Regions</option>
+      {% for r in regions %}
+        <option value="{{ r }}">{{ r }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-green-sm" onclick="refreshAll()">
+    <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+  </button>
+  <a href="{{ url_for('export_csv') }}" class="btn btn-ghost-sm" id="exportBtn">
+    <i class="bi bi-download me-1"></i>Export
+  </a>
+</div>
+
+<!-- Dataset Info Bar -->
+<div class="info-bar mb-4">
+  <div class="info-pill"><i class="bi bi-file-earmark-data me-2 text-green"></i>{{ dataset.original_filename }}</div>
+  <div class="info-pill"><i class="bi bi-table me-2 text-blue"></i>{{ '{:,}'.format(dataset.row_count) }} rows</div>
+  <div class="info-pill"><i class="bi bi-calendar-check me-2 text-purple"></i>{{ dataset.upload_date.strftime('%d %b %Y') }}</div>
+</div>
+
+<!-- Chart Grid -->
+<div class="analytics-grid">
+
+  <div class="chart-card span-2">
+    <div class="chart-header">
+      <span><i class="bi bi-activity me-2 text-green"></i>Monthly Sales Trend</span>
+      <span class="chart-badge">Line Chart</span>
+    </div>
+    <div class="chart-body-lg" id="cSalesTrend"><div class="chart-loading"><span class="spinner"></span></div></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span><i class="bi bi-bar-chart-steps me-2 text-green"></i>Top Products by Revenue</span>
+      <span class="chart-badge">Bar</span>
+    </div>
+    <div class="chart-body" id="cProductRev"><div class="chart-loading"><span class="spinner"></span></div></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span><i class="bi bi-pie-chart-fill me-2 text-green"></i>Category Breakdown</span>
+      <span class="chart-badge">Donut</span>
+    </div>
+    <div class="chart-body" id="cCategoryPie"><div class="chart-loading"><span class="spinner"></span></div></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span><i class="bi bi-map me-2 text-green"></i>Region Performance</span>
+      <span class="chart-badge">Grouped Bar</span>
+    </div>
+    <div class="chart-body" id="cRegion"><div class="chart-loading"><span class="spinner"></span></div></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-header">
+      <span><i class="bi bi-graph-up me-2 text-green"></i>Profit & Margin</span>
+      <span class="chart-badge">Combo</span>
+    </div>
+    <div class="chart-body" id="cProfit"><div class="chart-loading"><span class="spinner"></span></div></div>
+  </div>
+
+  <div class="chart-card span-2">
+    <div class="chart-header">
+      <span><i class="bi bi-grid-3x3-gap-fill me-2 text-green"></i>Sales Heatmap — Year × Month</span>
+      <span class="chart-badge">Heatmap</span>
+    </div>
+    <div class="chart-body-lg" id="cHeatmap"><div class="chart-loading"><span class="spinner"></span></div></div>
+  </div>
+
+  <div class="chart-card span-2">
+    <div class="chart-header">
+      <span><i class="bi bi-people-fill me-2 text-green"></i>Top Customers by Revenue</span>
+      <span class="chart-badge">Bar</span>
+    </div>
+    <div class="chart-body" id="cCustomer"><div class="chart-loading"><span class="spinner"></span></div></div>
+  </div>
+
+</div>
+
+<!-- Data Preview Table -->
+<div class="chart-card mt-4">
+  <div class="chart-header d-flex align-items-center">
+    <span><i class="bi bi-table me-2 text-green"></i>Data Preview</span>
+    <span class="ms-auto text-muted text-sm">First 100 rows</span>
+  </div>
+  <div class="table-wrap">
+    <div id="previewLoading" class="chart-loading"><span class="spinner"></span> Loading data…</div>
+    <div id="tableContainer" style="display:none; overflow-x:auto; max-height:380px; overflow-y:auto;">
+      <table class="data-table" id="previewTable">
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const allCharts = [
+  ['/api/chart/sales_trend', 'cSalesTrend'],
+  ['/api/chart/product_revenue', 'cProductRev'],
+  ['/api/chart/category_pie', 'cCategoryPie'],
+  ['/api/chart/region_performance', 'cRegion'],
+  ['/api/chart/profit_analysis', 'cProfit'],
+  ['/api/chart/heatmap', 'cHeatmap'],
+  ['/api/chart/customer_segment', 'cCustomer'],
+];
+
+function refreshAll() {
+  allCharts.forEach(([url, id]) => {
+    document.getElementById(id).innerHTML = '<div class="chart-loading"><span class="spinner"></span></div>';
+    fetch(url).then(r=>r.json()).then(d => renderChart(id, d.chart)).catch(()=>{});
+  });
+  updateExportLink();
+}
+
+function updateExportLink() {
+  const p = new URLSearchParams({
+    date_from: document.getElementById('fFrom').value,
+    date_to: document.getElementById('fTo').value,
+    category: document.getElementById('fCat').value,
+    region: document.getElementById('fReg').value,
+  });
+  document.getElementById('exportBtn').href = '/export/csv?' + p;
+}
+
+// Load data preview
+function loadPreview() {
+  fetch('/api/preview').then(r=>r.json()).then(d=>{
+    if (d.error) return;
+    const head = document.getElementById('tableHead');
+    const body = document.getElementById('tableBody');
+    head.innerHTML = '<tr>' + d.columns.map(c => `<th>${c}</th>`).join('') + '</tr>';
+    body.innerHTML = d.data.map(row =>
+      '<tr>' + row.map(cell => `<td>${cell}</td>`).join('') + '</tr>'
+    ).join('');
+    document.getElementById('previewLoading').style.display = 'none';
+    document.getElementById('tableContainer').style.display = 'block';
+  }).catch(()=>{});
+}
+
+refreshAll();
+loadPreview();
+</script>
+{% endblock %}
